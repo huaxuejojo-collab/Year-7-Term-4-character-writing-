@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Year 7 Mandarin Practice Tool</title>
+  <!-- Hanzi Writer Library -->
+  <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+  <style>
+    :root {
+      --primary: #4a90e2;
+      --secondary: #e67e22;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #2c3e50;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    select, button {
+      padding: 10px 16px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .main-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .display-info {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .pinyin-text {
+      font-size: 1.5rem;
+      color: var(--secondary);
+      font-weight: bold;
+    }
+
+    .english-text {
+      font-size: 1.2rem;
+      color: #7f8c8d;
+    }
+
+    #character-target {
+      width: 250px;
+      height: 250px;
+      border: 2px dashed #bdc3c7;
+      border-radius: 8px;
+      background-color: #fafafa;
+      margin: 15px 0;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn-secondary {
+      background-color: #95a5a6;
+    }
+
+    .btn-accent {
+      background-color: var(--secondary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Year 7 Mandarin Practice</h1>
+
+    <div class="controls">
+      <select id="category-select" onchange="loadCategory()">
+        <option value="1">1. People's Qualities</option>
+        <option value="2">2. Hobbies & Activities</option>
+        <option value="3">3. Animals</option>
+        <option value="4">4. Common Conversations</option>
+        <option value="5">5. Sequence Words & Actions</option>
+        <option value="6">6. Family Members</option>
+      </select>
+
+      <select id="vocab-select" onchange="selectWord()">
+        <!-- Populated dynamically -->
+      </select>
+    </div>
+
+    <div class="main-card">
+      <div class="display-info">
+        <div id="pinyin" class="pinyin-text">cōng míng</div>
+        <div id="english" class="english-text">smart</div>
+      </div>
+
+      <!-- Canvas container for Hanzi Writer -->
+      <div id="character-target"></div>
+
+      <div class="action-btns">
+        <button onclick="writer.animateCharacter()">Animate Strokes</button>
+        <button onclick="writer.quiz()" class="btn-accent">Practice Tracing</button>
+        <button onclick="nextWord()" class="btn-secondary">Next Word →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Embedded Vocabulary Data directly from the Term 4 Vocab List
+    const vocabData = {
+      "1": [
+        { char: "聪明", pinyin: "cōng míng", english: "smart" },
+        { char: "傻", pinyin: "shǎ", english: "silly" },
+        { char: "漂亮", pinyin: "piào liàng", english: "pretty" },
+        { char: "友好", pinyin: "yǒu hǎo", english: "friendly" }
+      ],
+      "2": [
+        { char: "听音乐", pinyin: "tīng yīn yuè", english: "listening to music" },
+        { char: "弹吉他", pinyin: "tán jí tā", english: "playing guitar" },
+        { char: "唱歌", pinyin: "chàng gē", english: "singing songs" },
+        { char: "跳舞", pinyin: "tiào wǔ", english: "dancing" },
+        { char: "画画", pinyin: "huà huà", english: "drawing pictures" },
+        { char: "看书", pinyin: "kàn shū", english: "reading books" },
+        { char: "看电视", pinyin: "kàn diàn shì", english: "watching TV" },
+        { char: "打篮球", pinyin: "dǎ lán qiú", english: "playing basketball" },
+        { char: "打乒乓球", pinyin: "dǎ pīng pāng qiú", english: "playing pingpong" },
+        { char: "喜欢", pinyin: "xǐ huān", english: "like" },
+        { char: "不喜欢", pinyin: "bù xǐ huān", english: "do not like" },
+        { char: "但是", pinyin: "dàn shì", english: "but" }
+      ],
+      "3": [
+        { char: "小鸡", pinyin: "xiǎo jī", english: "chick" },
+        { char: "小羊", pinyin: "xiǎo yáng", english: "little sheep, lamb" },
+        { char: "小狗", pinyin: "xiǎo gǒu", english: "puppy" },
+        { char: "小猪", pinyin: "xiǎo zhū", english: "little pig" },
+        { char: "大灰狼", pinyin: "dà huī láng", english: "big grey wolf" },
+        { char: "小猫", pinyin: "xiǎo māo", english: "kitten" }
+      ],
+      "4": [
+        { char: "你好", pinyin: "nǐ hǎo", english: "Hello" },
+        { char: "生日", pinyin: "shēng rì", english: "birthday" }
+      ],
+      "5": [
+        { char: "故事", pinyin: "gù shì", english: "Story" },
+        { char: "今天", pinyin: "jīntiān", english: "today" },
+        { char: "然后", pinyin: "ránhòu", english: "then / afterwards" },
+        { char: "突然", pinyin: "tūrán", english: "suddenly" },
+        { char: "喝水", pinyin: "hē shuǐ", english: "drink water" },
+        { char: "救命", pinyin: "jiù mìng", english: "help / save me" },
+        { char: "喊", pinyin: "hǎn", english: "to shout / to call out" },
+        { char: "害怕", pinyin: "hài pà", english: "afraid / scared" },
+        { char: "哭", pinyin: "kū", english: "to cry" },
+        { char: "高兴", pinyin: "gāo xìng", english: "happy" },
+        { char: "累", pinyin: "lèi", english: "tired" },
+        { char: "拍手", pinyin: "pāi shǒu", english: "clap hands" },
+        { char: "最后", pinyin: "zuìhòu", english: "finally / at last" }
+      ],
+      "6": [
+        { char: "爸爸", pinyin: "bàba", english: "dad / father" },
+        { char: "妈妈", pinyin: "māma", english: "mum / mother" },
+        { char: "哥哥", pinyin: "gēge", english: "older brother" },
+        { char: "弟弟", pinyin: "dìdi", english: "younger brother" },
+        { char: "姐姐", pinyin: "jiějie", english: "older sister" },
+        { char: "妹妹", pinyin: "mèimei", english: "younger sister" },
+        { char: "外公", pinyin: "wàigōng", english: "maternal grandfather" },
+        { char: "外婆", pinyin: "wàipó", english: "maternal grandmother" },
+        { char: "奶奶", pinyin: "nǎinai", english: "paternal grandmother" },
+        { char: "爷爷", pinyin: "yéye", english: "paternal grandfather" }
+      ]
+    };
+
+    let writer;
+    let currentWordIndex = 0;
+    let currentCategory = "1";
+
+    function loadCategory() {
+      currentCategory = document.getElementById("category-select").value;
+      const vocabSelect = document.getElementById("vocab-select");
+      vocabSelect.innerHTML = "";
+      
+      const words = vocabData[currentCategory];
+      words.forEach((item, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = `${item.char} (${item.pinyin})`;
+        vocabSelect.appendChild(opt);
+      });
+
+      currentWordIndex = 0;
+      updateDisplay();
+    }
+
+    function selectWord() {
+      currentWordIndex = parseInt(document.getElementById("vocab-select").value);
+      updateDisplay();
+    }
+
+    function nextWord() {
+      const words = vocabData[currentCategory];
+      currentWordIndex = (currentWordIndex + 1) % words.length;
+      document.getElementById("vocab-select").value = currentWordIndex;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const item = vocabData[currentCategory][currentWordIndex];
+      document.getElementById("pinyin").textContent = item.pinyin;
+      document.getElementById("english").textContent = item.english;
+
+      // Clear existing SVG
+      document.getElementById("character-target").innerHTML = "";
+
+      // Load first Chinese character of multi-char words into HanziWriter
+      const mainChar = item.char[0]; 
+
+      writer = HanziWriter.create('character-target', mainChar, {
+        width: 250,
+        height: 250,
+        padding: 5,
+        showOutline: true,
+        strokeAnimationSpeed: 1,
+        delayBetweenStrokes: 200
+      });
+
+      writer.quiz();
+    }
+
+    // Initialize on page load
+    window.onload = function() {
+      loadCategory();
+    };
+  </script>
+</body>
+</html> 
